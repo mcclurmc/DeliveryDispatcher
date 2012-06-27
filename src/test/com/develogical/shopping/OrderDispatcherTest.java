@@ -10,20 +10,29 @@ import org.junit.runner.RunWith;
 public class OrderDispatcherTest {
     Mockery context = new Mockery();
     private final Warehouse warehouse = context.mock(Warehouse.class);
-
     private final OrderDispatcher orderDispatcher = new OrderDispatcher(warehouse);
+    private final Order order = new Order("My Order");
+    private final OrderTracker orderTracker = context.mock(OrderTracker.class);
+    private final Recipient recipient = new Recipient("","","");
 
     @Test
     public void itemIsInStock_ThenConfirmOrder() {
-        // Objects we need
-        final Order order = new Order("My Order");
-        final OrderTracker orderTracker = context.mock(OrderTracker.class);
-        Recipient recipient = new Recipient("","","");
-
         context.checking(new Expectations() {{
             oneOf(warehouse).hasStockOf(order);
             will(returnValue(true));
             oneOf(orderTracker).orderConfirmed(order);
+            ignoring(warehouse);
+        }});
+
+        orderDispatcher.placeOrder(recipient, order, orderTracker);
+    }
+
+    @Test
+    public void itemIsNotInStock_ThenMarked_OutOfStock() {
+        context.checking(new Expectations() {{
+            oneOf(warehouse).hasStockOf(order);
+            will(returnValue(false));
+            oneOf(orderTracker).outOfStock(order);
             ignoring(warehouse);
         }});
 
